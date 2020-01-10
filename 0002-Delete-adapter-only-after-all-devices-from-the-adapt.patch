@@ -1,0 +1,37 @@
+From a316b2a48d0ad0a6e3ee7ec90a74bc771f4e3c46 Mon Sep 17 00:00:00 2001
+From: David Rosca <nowrep@gmail.com>
+Date: Mon, 27 Apr 2015 17:46:06 +0200
+Subject: [PATCH 2/2] Delete adapter only after all devices from the adapter
+ were removed
+
+BUG: 346329
+---
+ bluedevil/bluedevilmanager_p.cpp | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/bluedevil/bluedevilmanager_p.cpp b/bluedevil/bluedevilmanager_p.cpp
+index bb65467..3c45f2a 100644
+--- a/bluedevil/bluedevilmanager_p.cpp
++++ b/bluedevil/bluedevilmanager_p.cpp
+@@ -162,7 +162,6 @@ void ManagerPrivate::_k_interfacesRemoved(const QDBusObjectPath &objectPath, con
+             }
+             if (adapter) {
+                 emit m_q->adapterRemoved(adapter);
+-                delete adapter;
+             }
+             if (m_adapters.isEmpty()) {
+                 emit m_q->usableAdapterChanged(0);
+@@ -180,6 +179,10 @@ void ManagerPrivate::_k_interfacesRemoved(const QDBusObjectPath &objectPath, con
+             Adapter * const adapter = m_devAdapter.take(object);
+             if (adapter) {
+                 adapter->removeDevice(object);
++
++                if (adapter->devices().isEmpty()) {
++                    adapter->deleteLater();
++                }
+             }
+         }
+     }
+-- 
+2.3.6
+

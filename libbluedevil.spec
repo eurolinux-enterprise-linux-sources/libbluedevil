@@ -1,37 +1,39 @@
 
+%define stable stable
+
 Name:           libbluedevil
-Version:        1.9.2
-Release:        5%{?dist}
+Version:        2.1
+Release:        1%{?dist}
 Summary:        A Qt wrapper for bluez
 
-Group:          System Environment/Libraries
 License:        LGPLv2+
 URL:            https://projects.kde.org/projects/playground/libs/libbluedevil 
 
-Source0:        ftp://ftp.kde.org/pub/kde/stable/libbluedevil/%{version}/src/libbluedevil-%{version}.tar.bz2
-# git archive --format=tar --remote=git://anongit.kde.org/libbluedevil v1.9s /
-# --prefix=libbluedevil-v1.9/ -o libbluedevil-v1.9.tgz
-# tar xvzf libbluedevil-v1.9.tgz
-# rm libbluedevil-v1.9/qt4.tag
-# tar cjvf libbluedevil-v1.9-%{snapshot}.tar.bz2 libbluedevil-v1.9/
-#Source0:        libbluedevil-v%{version}-%{snapshot}.tar.bz2
-## match ExcludeArch for obexd and friends
+%if 0%{?snap}
+# git archive --format=tar --remote=git://anongit.kde.org/libbluedevil bluez5  --prefix=libbluedevil-%{version}/ | xz ...
+Source0:        libbluedevil-%{version}-%{snap}.tar.xz
+%else
+Source0: http://download.kde.org/%{stable}/libbluedevil/%{version}%{?pre:-%{pre}}/src/libbluedevil-%{version}%{?pre:-%{pre}}.tar.xz
+%endif
+
+## upstream patches
+Patch1: 0001-Adapter-Add-back-alias-and-setAlias-for-binary-compa.patch
+Patch2: 0002-Delete-adapter-only-after-all-devices-from-the-adapt.patch
+Patch3: 0003-Only-delete-adapter-when-removed-from-m_adapters-has.patch
+
 ExcludeArch:    s390 s390x
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-
-BuildRequires:  qt4-devel
 BuildRequires:  automoc4
 BuildRequires:  cmake
+BuildRequires:  pkgconfig(QtCore) pkgconfig(QtDBus)
 
-Requires:       bluez
+Requires:       bluez >= 5
 
 %description
 %{name} is Qt-based library written handle all Bluetooth functionality.
 
 %package        devel
 Summary:        Development files for %{name}
-Group:          Development/Libraries
 Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description    devel
@@ -39,11 +41,11 @@ Development files for %{name}.
 
 
 %prep
-%setup -q 
+%autosetup -n libbluedevil-%{version}%{?pre:-%{pre}} -p1
 
 
 %build
-mkdir -p %{_target_platform}
+mkdir %{_target_platform}
 pushd %{_target_platform}
 %{cmake} ..
 popd
@@ -52,23 +54,16 @@ make %{?_smp_mflags} -C %{_target_platform}
 
 
 %install
-rm -rf %{buildroot}
 make install/fast DESTDIR=%{buildroot} -C %{_target_platform}
-
-
-%clean
-rm -rf %{buildroot}
 
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
 
 %files
-%defattr(-,root,root,-)
-%{_libdir}/libbluedevil.so.1*
+%{_libdir}/libbluedevil.so.2*
 
 %files devel
-%defattr(-,root,root,-)
 %doc HACKING
 %{_includedir}/bluedevil/
 %{_libdir}/libbluedevil.so
@@ -76,6 +71,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon May 25 2015 Jan Grulich <jgrulich@redhat.com> - 2.1-1
+- Re-base to 2.1 (sync with F21)
+
 * Fri Dec 27 2013 Daniel Mach <dmach@redhat.com> - 1.9.2-5
 - Mass rebuild 2013-12-27
 
